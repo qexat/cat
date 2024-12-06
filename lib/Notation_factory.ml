@@ -1,11 +1,11 @@
 module Functor (F : Typeclass.FUNCTOR) = struct
-  include F
+  open F
 
   let ( <$ ) : 'a -> 'b t -> 'a t = F.const_map
 end
 
 module Applicative (A : Typeclass.APPLICATIVE) = struct
-  include A
+  open A
 
   let ( <*> ) : ('a -> 'b) t -> 'a t -> 'b t = distribute
   let ( *> ) : 'a t -> 'b t -> 'b t = sequence
@@ -18,7 +18,7 @@ module Applicative (A : Typeclass.APPLICATIVE) = struct
 end
 
 module Monad (M : Typeclass.MONAD) = struct
-  include M
+  open M
   include Applicative (M)
 
   let ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t = bind
