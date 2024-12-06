@@ -4,6 +4,14 @@ module Functor (F : Typeclass.FUNCTOR_BASE) = struct
   let const_map (value : 'a) : 'b t -> 'a t = functor_map (Fun.const value)
 end
 
+module Contravariant_functor (CF : Typeclass.CONTRAVARIANT_FUNCTOR_BASE) = struct
+  include CF
+
+  let contravariant_const_map (value : 'b) : 'b t -> 'a t =
+    value |> Fun.const |> contravariant_functor_map
+  ;;
+end
+
 module Applicative (A : Typeclass.APPLICATIVE_BASE) = struct
   (* Functor part of A
      We do not require A to be a full-fledged functor as we can

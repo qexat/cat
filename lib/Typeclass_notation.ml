@@ -4,6 +4,12 @@ module type FUNCTOR_NOTATION = sig
   val ( <$ ) : 'a -> 'b t -> 'a t
 end
 
+module type CONTRAVARIANT_FUNCTOR_NOTATION = sig
+  type 'a t
+
+  val ( >$ ) : 'b -> 'b t -> 'a t
+end
+
 module type APPLICATIVE_NOTATION = sig
   type 'a t
 

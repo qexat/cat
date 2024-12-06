@@ -10,6 +10,18 @@ module type FUNCTOR = sig
   val const_map : 'a -> 'b t -> 'a t
 end
 
+module type CONTRAVARIANT_FUNCTOR_BASE = sig
+  type 'a t
+
+  val contravariant_functor_map : ('a -> 'b) -> 'b t -> 'a t
+end
+
+module type CONTRAVARIANT_FUNCTOR = sig
+  include CONTRAVARIANT_FUNCTOR_BASE
+
+  val contravariant_const_map : 'b -> 'b t -> 'a t
+end
+
 module type APPLICATIVE_BASE = sig
   include FUNCTOR_BASE
 
