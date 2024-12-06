@@ -1,41 +1,38 @@
-open Cat.Instance
+open Cat.Lib
 
-let rec find_element_opt_acc lst value start =
-  match lst with
-  | [] -> Option.None
-  | head :: tail ->
-      if head = value then Option.Some start
-      else find_element_opt_acc tail value (start + 1)
+let find_element (lst : 'a List.t) (value : 'a) =
+  let rec aux list value start =
+    match list with
+    | List.Nil -> Option.None
+    | List.Cons (head, tail) ->
+      if head = value then Option.Some start else aux tail value (start + 1)
+  in
+  aux lst value 0
+;;
 
-let find_element_opt lst value = find_element_opt_acc lst value 0
+let get_element (lst : 'a List.t) (index : int) : 'a Option.t =
+  let rec aux lst index start =
+    match lst with
+    | List.Nil -> Option.None
+    | List.Cons (head, tail) ->
+      if index = start then Option.Some head else aux tail index (start + 1)
+  in
+  aux lst index 0
+;;
 
-let rec get_element_opt_acc lst index start =
-  match lst with
-  | [] -> Option.None
-  | head :: tail ->
-      if index = start then Option.Some head
-      else get_element_opt_acc tail index (start + 1)
-
-let get_element_opt lst value = get_element_opt_acc lst value 0
-let grades = [ 16; 13; 15; 9; 12; 19 ]
+let grades = List.of_std_list [ 16; 13; 15; 9; 12; 19 ]
 
 let () =
-  let open Option in
-  match find_element_opt grades 15 >>= get_element_opt grades with
-  | None -> Printf.printf "No grade of 15"
-  | Some grade -> Printf.printf "Grade of %d\n" grade
-
-(* let l = LinkedList.lift 3
-   let m = LinkedList.fmap (fun a -> a + 1) l
-   let () = Printf.printf "%s\n" (LinkedList.pp m) *)
+  let open Option.Notation in
+  match find_element grades 15 >>= get_element grades with
+  | Option.None -> Printf.printf "No grade of 15"
+  | Option.Some grade -> Printf.printf "Grade of %d\n" grade
+;;
 
 open Cat.Number
+open Nat.Notation
 
-let one = Nat.s Nat.z
-let two = Nat.s one
-
-let three =
-  let open Nat in
-  one + two
-
-let () = Printf.printf "three is %d\n" (Cat.Number.int_of_nat three)
+let one = Nat.succ Nat.zero
+let two = Nat.succ one
+let three = one + two
+let () = Printf.printf "three is %s\n" (render three (module Nat))

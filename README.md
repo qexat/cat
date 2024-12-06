@@ -1,6 +1,6 @@
 # Category theory stuff in OCaml
 
-todo: need to be finished at some point idk
+todo: add some doc
 
 mostly functorial typeclasses using the module system but there's more :P
 

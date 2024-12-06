@@ -1,3 +1,2 @@
 (library
- (name cat)
- (modules base base_syntax common factory instance number))
+ (name cat))
