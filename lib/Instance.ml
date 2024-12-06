@@ -17,6 +17,26 @@ module Predicate = struct
   include Base
 end
 
+(* Examples of bifunctor instances *)
+
+module Either = struct
+  module Base : Typeclass.BIFUNCTOR_BASE = struct
+    type ('a, 'b) t =
+      | Left of 'a
+      | Right of 'b
+
+    let bifunctor_map (funcl : 'a -> 'c) (funcr : 'b -> 'd) : ('a, 'b) t -> ('c, 'd) t
+      = function
+      | Left left -> Left (funcl left)
+      | Right right -> Right (funcr right)
+    ;;
+  end
+
+  module Full = Factory.Bifunctor (Base)
+  include Full
+  include Base
+end
+
 (* Examples of applicative instances *)
 
 module HomoPair = struct

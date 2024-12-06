@@ -12,6 +12,30 @@ module Contravariant_functor (CF : Typeclass.CONTRAVARIANT_FUNCTOR_BASE) = struc
   ;;
 end
 
+module Bifunctor (BF : Typeclass.BIFUNCTOR_BASE) = struct
+  include BF
+
+  let functor_map_left (func : 'a -> 'b) : ('a, 'c) t -> ('b, 'c) t =
+    bifunctor_map func Fun.id
+  ;;
+
+  let functor_map_right (func : 'b -> 'c) : ('a, 'b) t -> ('a, 'c) t =
+    bifunctor_map Fun.id func
+  ;;
+
+  let const_map (left : 'b) (right : 'd) : ('a, 'c) t -> ('b, 'd) t =
+    bifunctor_map (Fun.const left) (Fun.const right)
+  ;;
+
+  let const_map_left (value : 'b) : ('a, 'c) t -> ('b, 'c) t =
+    bifunctor_map (Fun.const value) Fun.id
+  ;;
+
+  let const_map_right (value : 'c) : ('a, 'b) t -> ('a, 'c) t =
+    bifunctor_map Fun.id (Fun.const value)
+  ;;
+end
+
 module Applicative (A : Typeclass.APPLICATIVE_BASE) = struct
   (* Functor part of A
      We do not require A to be a full-fledged functor as we can

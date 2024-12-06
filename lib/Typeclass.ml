@@ -22,6 +22,22 @@ module type CONTRAVARIANT_FUNCTOR = sig
   val contravariant_const_map : 'b -> 'b t -> 'a t
 end
 
+module type BIFUNCTOR_BASE = sig
+  type ('a, 'b) t
+
+  val bifunctor_map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
+end
+
+module type BIFUNCTOR = sig
+  include BIFUNCTOR_BASE
+
+  val functor_map_left : ('a -> 'b) -> ('a, 'c) t -> ('b, 'c) t
+  val functor_map_right : ('b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
+  val const_map : 'b -> 'd -> ('a, 'c) t -> ('b, 'd) t
+  val const_map_left : 'b -> ('a, 'c) t -> ('b, 'c) t
+  val const_map_right : 'c -> ('a, 'b) t -> ('a, 'c) t
+end
+
 module type APPLICATIVE_BASE = sig
   include FUNCTOR_BASE
 
