@@ -1,5 +1,24 @@
 (** Various instances of the functorial typeclasses. *)
 
+(* Examples of contravariant functor instances *)
+
+module Predicate = struct
+  module Base = struct
+    type 'a t = 'a -> bool
+
+    let contravariant_functor_map (func : 'a -> 'b) (predicate : 'b t) : 'a t =
+      fun a -> predicate (func a)
+    ;;
+  end
+
+  module Full = Factory.Contravariant_functor (Base)
+  module Notation = Notation_factory.Contravariant_functor (Full)
+  include Full
+  include Base
+end
+
+(* Examples of applicative instances *)
+
 module HomoPair = struct
   module Base = struct
     type 'a t = 'a * 'a
@@ -26,6 +45,8 @@ module HomoPair = struct
   include Full
   include Base
 end
+
+(* Examples of monad instances *)
 
 module Option = struct
   (* Base definition *)
