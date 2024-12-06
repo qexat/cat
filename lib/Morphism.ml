@@ -19,9 +19,9 @@ module Hylomorphism (F : Typeclass.FUNCTOR) = struct
   module Cata = Catamorphism (F)
 
   let hylo
-    (algebra : 'a Structure.F_algebra(F).t)
-    (coalgebra : 'a Structure.F_coalgebra(F).t)
-    (value : 'a)
+        (algebra : 'a Structure.F_algebra(F).t)
+        (coalgebra : 'a Structure.F_coalgebra(F).t)
+        (value : 'a)
     : 'a
     =
     Cata.cata algebra (Ana.ana coalgebra value)
