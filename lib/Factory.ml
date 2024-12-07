@@ -1,7 +1,12 @@
+module FunctorMixin (F : Typeclass.FUNCTOR_BASE) = struct
+  type 'a t = 'a F.t
+
+  let const_map (value : 'a) : 'b t -> 'a t = F.functor_map (Fun.const value)
+end
+
 module Functor (F : Typeclass.FUNCTOR_BASE) = struct
   include F
-
-  let const_map (value : 'a) : 'b t -> 'a t = functor_map (Fun.const value)
+  include FunctorMixin (F)
 end
 
 module Contravariant_functor (CF : Typeclass.CONTRAVARIANT_FUNCTOR_BASE) = struct
@@ -34,31 +39,38 @@ module Bifunctor (BF : Typeclass.BIFUNCTOR_BASE) = struct
   ;;
 end
 
-module Applicative (A : Typeclass.APPLICATIVE_BASE) = struct
-  (* Functor part of A
-     We do not require A to be a full-fledged functor as we can
-     derive the additional methods ourselves.
-  *)
-  module Functor = Functor (A)
-  include Functor
+module ApplicativeMixin (A : Typeclass.APPLICATIVE_BASE) = struct
+  type 'a t = 'a A.t
 
-  (* Baseline of an applicative - its minimal requirements *)
-  include A
+  include (FunctorMixin (A) : Typeclass.FUNCTOR_MIXIN with type 'a t := 'a t)
 
-  let distribute (func : ('a -> 'b) t) (value : 'a t) : 'b t =
-    lift_binary (fun a -> a) func value
+  let distribute (func : ('a -> 'b) A.t) (value : 'a A.t) : 'b A.t =
+    A.lift_binary (fun a -> a) func value
   ;;
 
-  let sequence (app1 : 'a t) (app2 : 'b t) : 'b t =
+  let sequence (app1 : 'a A.t) (app2 : 'b A.t) : 'b A.t =
     distribute (const_map (fun a -> a) app1) app2
   ;;
 
-  let lifted_const (app1 : 'a t) (app2 : 'b t) : 'a t = lift_binary Fun.const app1 app2
+  let lifted_const (app1 : 'a A.t) (app2 : 'b A.t) : 'a A.t =
+    A.lift_binary Fun.const app1 app2
+  ;;
+end
+
+module Applicative (A : Typeclass.APPLICATIVE_BASE) = struct
+  include A
+  include ApplicativeMixin (A)
+end
+
+module MonadMixin (M : Typeclass.MONAD_BASE) = struct
+  type 'a t = 'a M.t
+
+  include (ApplicativeMixin (M) : Typeclass.APPLICATIVE_MIXIN with type 'a t := 'a t)
+
+  let bind (monad : 'a t) (func : 'a -> 'b t) : 'b t = M.join (M.functor_map func monad)
 end
 
 module Monad (M : Typeclass.MONAD_BASE) = struct
   include M
-  include Applicative (M)
-
-  let bind (monad : 'a t) (func : 'a -> 'b t) : 'b t = join (functor_map func monad)
+  include MonadMixin (M)
 end
