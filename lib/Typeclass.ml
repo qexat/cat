@@ -13,19 +13,19 @@ end
 module type CONTRAVARIANT_FUNCTOR_BASE = sig
   type 'a t
 
-  val contravariant_functor_map : ('a -> 'b) -> 'b t -> 'a t
+  val functor_map : ('a -> 'b) -> 'b t -> 'a t
 end
 
 module type CONTRAVARIANT_FUNCTOR = sig
   include CONTRAVARIANT_FUNCTOR_BASE
 
-  val contravariant_const_map : 'b -> 'b t -> 'a t
+  val const_map : 'b -> 'b t -> 'a t
 end
 
 module type BIFUNCTOR_BASE = sig
   type ('a, 'b) t
 
-  val bifunctor_map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
+  val functor_map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
 end
 
 module type BIFUNCTOR = sig

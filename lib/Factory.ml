@@ -7,32 +7,30 @@ end
 module Contravariant_functor (CF : Typeclass.CONTRAVARIANT_FUNCTOR_BASE) = struct
   include CF
 
-  let contravariant_const_map (value : 'b) : 'b t -> 'a t =
-    value |> Fun.const |> contravariant_functor_map
-  ;;
+  let const_map (value : 'b) : 'b t -> 'a t = value |> Fun.const |> functor_map
 end
 
 module Bifunctor (BF : Typeclass.BIFUNCTOR_BASE) = struct
   include BF
 
   let functor_map_left (func : 'a -> 'b) : ('a, 'c) t -> ('b, 'c) t =
-    bifunctor_map func Fun.id
+    functor_map func Fun.id
   ;;
 
   let functor_map_right (func : 'b -> 'c) : ('a, 'b) t -> ('a, 'c) t =
-    bifunctor_map Fun.id func
+    functor_map Fun.id func
   ;;
 
   let const_map (left : 'b) (right : 'd) : ('a, 'c) t -> ('b, 'd) t =
-    bifunctor_map (Fun.const left) (Fun.const right)
+    functor_map (Fun.const left) (Fun.const right)
   ;;
 
   let const_map_left (value : 'b) : ('a, 'c) t -> ('b, 'c) t =
-    bifunctor_map (Fun.const value) Fun.id
+    functor_map (Fun.const value) Fun.id
   ;;
 
   let const_map_right (value : 'c) : ('a, 'b) t -> ('a, 'c) t =
-    bifunctor_map Fun.id (Fun.const value)
+    functor_map Fun.id (Fun.const value)
   ;;
 end
 

@@ -6,7 +6,7 @@ module Predicate = struct
   module Base = struct
     type 'a t = 'a -> bool
 
-    let contravariant_functor_map (func : 'a -> 'b) (predicate : 'b t) : 'a t =
+    let functor_map (func : 'a -> 'b) (predicate : 'b t) : 'a t =
       fun a -> predicate (func a)
     ;;
   end
@@ -25,7 +25,7 @@ module Either = struct
       | Left of 'a
       | Right of 'b
 
-    let bifunctor_map (funcl : 'a -> 'c) (funcr : 'b -> 'd) : ('a, 'b) t -> ('c, 'd) t
+    let functor_map (funcl : 'a -> 'c) (funcr : 'b -> 'd) : ('a, 'b) t -> ('c, 'd) t
       = function
       | Left left -> Left (funcl left)
       | Right right -> Right (funcr right)

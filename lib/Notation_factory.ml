@@ -7,7 +7,7 @@ end
 module Contravariant_functor (CF : Typeclass.CONTRAVARIANT_FUNCTOR) = struct
   open CF
 
-  let ( >$ ) : 'b -> 'b t -> 'a t = contravariant_const_map
+  let ( >$ ) : 'b -> 'b t -> 'a t = const_map
 end
 
 module Applicative (A : Typeclass.APPLICATIVE) = struct
