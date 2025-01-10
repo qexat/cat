@@ -1,4 +1,4 @@
-module FunctorMixin (F : Typeclass.FUNCTOR_BASE) = struct
+module Functor_mixin (F : Typeclass.FUNCTOR_BASE) = struct
   type 'a t = 'a F.t
 
   let const_map (value : 'a) : 'b t -> 'a t = F.functor_map (Fun.const value)
@@ -6,7 +6,7 @@ end
 
 module Functor (F : Typeclass.FUNCTOR_BASE) = struct
   include F
-  include FunctorMixin (F)
+  include Functor_mixin (F)
 end
 
 module Contravariant_functor (CF : Typeclass.CONTRAVARIANT_FUNCTOR_BASE) = struct
@@ -39,10 +39,10 @@ module Bifunctor (BF : Typeclass.BIFUNCTOR_BASE) = struct
   ;;
 end
 
-module ApplicativeMixin (A : Typeclass.APPLICATIVE_BASE) = struct
+module Applicative_mixin (A : Typeclass.APPLICATIVE_BASE) = struct
   type 'a t = 'a A.t
 
-  include (FunctorMixin (A) : Typeclass.FUNCTOR_MIXIN with type 'a t := 'a t)
+  include (Functor_mixin (A) : Typeclass.FUNCTOR_MIXIN with type 'a t := 'a t)
 
   let distribute (func : ('a -> 'b) A.t) (value : 'a A.t) : 'b A.t =
     A.lift_binary (fun a -> a) func value
@@ -59,18 +59,18 @@ end
 
 module Applicative (A : Typeclass.APPLICATIVE_BASE) = struct
   include A
-  include ApplicativeMixin (A)
+  include Applicative_mixin (A)
 end
 
-module MonadMixin (M : Typeclass.MONAD_BASE) = struct
+module Monad_mixin (M : Typeclass.MONAD_BASE) = struct
   type 'a t = 'a M.t
 
-  include (ApplicativeMixin (M) : Typeclass.APPLICATIVE_MIXIN with type 'a t := 'a t)
+  include (Applicative_mixin (M) : Typeclass.APPLICATIVE_MIXIN with type 'a t := 'a t)
 
   let bind (monad : 'a t) (func : 'a -> 'b t) : 'b t = M.join (M.functor_map func monad)
 end
 
 module Monad (M : Typeclass.MONAD_BASE) = struct
   include M
-  include MonadMixin (M)
+  include Monad_mixin (M)
 end

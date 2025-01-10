@@ -1,4 +1,4 @@
-module NatMinimalFunctor = struct
+module Nat_minimal_functor = struct
   type 'a t =
     | O
     | S of 'a
@@ -11,8 +11,8 @@ end
 
 module Nat = struct
   (* Let's first build our full functor *)
-  include NatMinimalFunctor
-  module Functor = Factory.Functor (NatMinimalFunctor)
+  include Nat_minimal_functor
+  module Functor = Factory.Functor (Nat_minimal_functor)
 
   (* Let's introduce the fixpoint *)
   include Iter.Fix (Functor)
