@@ -3,7 +3,7 @@ module Nat_minimal_functor = struct
     | O
     | S of 'a
 
-  let functor_map (func : 'a -> 'b) : 'a t -> 'b t = function
+  let map (func : 'a -> 'b) : 'a t -> 'b t = function
     | O -> O
     | S value -> S (func value)
   ;;
@@ -12,7 +12,7 @@ end
 module Nat = struct
   (* Let's first build our full functor *)
   include Nat_minimal_functor
-  module Functor = Factory.Functor (Nat_minimal_functor)
+  module Functor = Mixins.Functor (Nat_minimal_functor)
 
   (* Let's introduce the fixpoint *)
   include Iter.Fix (Functor)
@@ -20,7 +20,7 @@ module Nat = struct
   type t = fix
 
   (* Then our catamorphism *)
-  module Catamorphism = Morphism.Catamorphism (Functor)
+  module Catamorphism = Recursion.Catamorphism (Functor)
 
   let zero : t = Fix O
   let succ (n : t) : t = Fix (S n)
@@ -48,9 +48,8 @@ module Nat = struct
   ;;
 
   let of_int (i : int) : t Instance.Option.t =
-    let open Instance in
     if i < 0
-    then Option.None
+    then None
     else (
       let integer = ref i in
       let result = ref (Fix O) in
@@ -58,7 +57,7 @@ module Nat = struct
         result := Fix (S !result);
         integer := !integer - 1
       done;
-      Option.Some !result)
+      Some !result)
   ;;
 
   let of_int_exn (i : int) : t =

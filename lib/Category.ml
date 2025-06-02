@@ -1,10 +1,7 @@
 (* TODO: encode laws *)
 module type CATEGORY = sig
   type obj
-
-  type arrow =
-    | Monadic of (obj -> obj)
-    | Variadic of (obj -> arrow)
+  type arrow = obj -> obj
 
   val id : arrow
   val ( * ) : arrow -> arrow -> arrow

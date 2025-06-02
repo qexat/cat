@@ -1,117 +1,139 @@
-module type FUNCTOR_BASE = sig
-  type 'a t
+module type MAGMA = sig
+  type t
 
-  val functor_map : ('a -> 'b) -> 'a t -> 'b t
+  val compose : t -> t -> t
 end
 
-module type FUNCTOR_MIXIN = sig
-  type 'a t
+module type QUASIGROUP = sig
+  include MAGMA
 
-  val const_map : 'a -> 'b t -> 'a t
+  val invert : t -> t
+end
+
+module type UNITAL_MAGMA = sig
+  include MAGMA
+
+  (** [id] must satisfy the following laws:
+      - ∀(x : t), compose id x = x
+      - ∀(x : t), compose x id = x *)
+  val id : t
+end
+
+module type SEMIGROUP = sig
+  (** Semigroups must satisfy the following law:
+      - ∀(x y z : t), compose (compose x y) z = compose x (compose y z) *)
+
+  include MAGMA
+end
+
+module type LOOP = sig
+  include UNITAL_MAGMA
+  include QUASIGROUP with type t := t
+end
+
+module type ASSOCIATIVE_QUASIGROUP = sig
+  include QUASIGROUP
+  include SEMIGROUP with type t := t
+end
+
+module type MONOID = sig
+  include UNITAL_MAGMA
+  include SEMIGROUP with type t := t
+end
+
+module type GROUP = sig
+  include QUASIGROUP
+  include UNITAL_MAGMA with type t := t
+  include SEMIGROUP with type t := t
+end
+
+module type LATTICE = sig
+  (** Lattices must satisfy the absorption laws:
+      - ∀(a b : t), join a (meet a b) = a
+      - ∀(a b : t), meet a (join a b) = a *)
+
+  type t
+
+  (** [meet] must be idempotent, commutative and associative *)
+  val meet : t -> t -> t
+
+  (** [join] must be idempotent, commutative and associative *)
+  val join : t -> t -> t
+end
+
+module type BOUNDED_LATTICE = sig
+  include LATTICE
+
+  (** [top] is the identity of [meet] *)
+  val top : t
+
+  (** [bottom] is the identity of [join] *)
+  val bottom : t
 end
 
 module type FUNCTOR = sig
   type 'a t
 
-  include FUNCTOR_BASE with type 'a t := 'a t
-  include FUNCTOR_MIXIN with type 'a t := 'a t
+  val map : ('a -> 'b) -> 'a t -> 'b t
 end
 
-module type CONTRAVARIANT_FUNCTOR_BASE = sig
+module type CONTRAVARIANT = sig
   type 'a t
 
-  val functor_map : ('a -> 'b) -> 'b t -> 'a t
+  val map : ('b -> 'a) -> 'a t -> 'b t
 end
 
-module type CONTRAVARIANT_FUNCTOR_MIXIN = sig
-  type 'a t
-
-  val const_map : 'b -> 'b t -> 'a t
-end
-
-module type CONTRAVARIANT_FUNCTOR = sig
-  type 'a t
-
-  include CONTRAVARIANT_FUNCTOR_BASE with type 'a t := 'a t
-  include CONTRAVARIANT_FUNCTOR_MIXIN with type 'a t := 'a t
-end
-
-module type BIFUNCTOR_BASE = sig
-  type ('a, 'b) t
-
-  val functor_map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
-end
-
-module type BIFUNCTOR_MIXIN = sig
-  type ('a, 'b) t
-
-  val functor_map_left : ('a -> 'b) -> ('a, 'c) t -> ('b, 'c) t
-  val functor_map_right : ('b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
-  val const_map : 'b -> 'd -> ('a, 'c) t -> ('b, 'd) t
-  val const_map_left : 'b -> ('a, 'c) t -> ('b, 'c) t
-  val const_map_right : 'c -> ('a, 'b) t -> ('a, 'c) t
-end
-
-module type BIFUNCTOR = sig
-  type ('a, 'b) t
-
-  include BIFUNCTOR_BASE with type ('a, 'b) t := ('a, 'b) t
-  include BIFUNCTOR_MIXIN with type ('a, 'b) t := ('a, 'b) t
-end
-
-module type APPLICATIVE_BASE = sig
-  type 'a t
-
-  include FUNCTOR_BASE with type 'a t := 'a t
+module type APPLICATIVE = sig
+  include FUNCTOR
 
   val lift : 'a -> 'a t
   val lift_binary : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
 end
 
-module type APPLICATIVE_MIXIN = sig
-  type 'a t
+module type SELECTIVE = sig
+  include APPLICATIVE
 
-  include FUNCTOR_MIXIN with type 'a t := 'a t
-
-  val distribute : ('a -> 'b) t -> 'a t -> 'b t
-  val sequence : 'a t -> 'b t -> 'b t
-  val lifted_const : 'a t -> 'b t -> 'a t
+  val select : ('a, 'b) Either.t t -> ('a -> 'b) t -> 'b t
 end
 
-module type APPLICATIVE = sig
-  type 'a t
-
-  include APPLICATIVE_BASE with type 'a t := 'a t
-  include FUNCTOR_MIXIN with type 'a t := 'a t
-  include APPLICATIVE_MIXIN with type 'a t := 'a t
-end
-
-module type MONAD_BASE = sig
-  type 'a t
-
-  include APPLICATIVE_BASE with type 'a t := 'a t
-
-  val join : 'a t t -> 'a t
-end
-
-module type MONAD_MIXIN = sig
-  type 'a t
-
-  include APPLICATIVE_MIXIN with type 'a t := 'a t
+module type MONAD = sig
+  include SELECTIVE
 
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 end
 
-module type MONAD = sig
-  type 'a t
+module type BIFUNCTOR = sig
+  type ('a, 'b) t
 
-  include MONAD_BASE with type 'a t := 'a t
-  include APPLICATIVE_MIXIN with type 'a t := 'a t
-  include MONAD_MIXIN with type 'a t := 'a t
+  val map : ('a -> 'c) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
 end
 
-module type RENDERABLE = sig
-  type t
+module type PROFUNCTOR = sig
+  type ('a, 'b) t
 
-  val render : t -> string
+  val map : ('c -> 'a) -> ('b -> 'd) -> ('a, 'b) t -> ('c, 'd) t
+end
+
+module type BICONTRAVARIANT = sig
+  type ('a, 'b) t
+
+  val map : ('c -> 'a) -> ('d -> 'b) -> ('a, 'b) t -> ('c, 'd) t
+end
+
+module type BIAPPLICATIVE = sig
+  include BIFUNCTOR
+
+  val lift : 'a -> 'b -> ('a, 'b) t
+
+  val lift_binary
+    :  ('a -> 'b -> 'c -> 'd -> 'e * 'f)
+    -> ('a, 'b) t
+    -> ('c, 'd) t
+    -> ('e, 'f) t
+end
+
+module type DYAD = sig
+  include BIAPPLICATIVE
+
+  val bind : ('a, 'b) t -> ('a -> 'b -> ('c, 'd) t) -> ('c, 'd) t
 end

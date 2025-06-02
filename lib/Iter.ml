@@ -1,10 +1,10 @@
-module type FIX_TYPE = functor (F : Typeclass.FUNCTOR) -> sig
+module type FIX = functor (F : Typeclass.FUNCTOR) -> sig
   type fix = Fix of fix F.t
 
   val unfix : fix -> fix F.t
 end
 
-module Fix : FIX_TYPE =
+module Fix : FIX =
 functor
   (F : Typeclass.FUNCTOR)
   ->
@@ -14,17 +14,18 @@ functor
     let unfix (Fix f) : fix F.t = f
   end
 
-module Loop = struct
-  type ('a, 'b) t =
-    | Base of 'a
-    | Continue of 'b
+module Fix_tag (F : Typeclass.FUNCTOR) = struct
+  type 't fix =
+    | Empty
+    | Tagged of ('t * 't fix F.t)
 
-  let return (value : 'a) : ('a, 'b) t = Base value
-  let continue (value : 'b) : ('a, 'b) t = Continue value
+  let unfix : 't fix -> 't option = function
+    | Empty -> None
+    | Tagged (tag, _) -> Some tag
+  ;;
 
-  let rec loop (func : 'b -> ('a, 'b) t) (value : 'b) : 'a =
-    match func value with
-    | Base a -> a
-    | Continue b' -> loop func b'
+  let untag : 't fix -> 't fix F.t option = function
+    | Empty -> None
+    | Tagged (_, rest) -> Some rest
   ;;
 end

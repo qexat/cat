@@ -1,49 +1,60 @@
-(** Various instances of the functorial typeclasses. *)
+(** Various instances of the typeclasses. *)
 
-(* Examples of contravariant functor instances *)
+open Core
+
+(* Examples of functor instances *)
 
 module Predicate = struct
   module Base = struct
     type 'a t = 'a -> bool
 
-    let functor_map (func : 'a -> 'b) (predicate : 'b t) : 'a t =
-      fun a -> predicate (func a)
-    ;;
+    let map (func : 'a -> 'b) (predicate : 'b t) : 'a t = fun a -> predicate (func a)
   end
 
-  module Full = Factory.Contravariant_functor (Base)
-  module Notation = Notation_factory.Contravariant_functor (Full)
+  module Full = Mixins.Contravariant (Base)
+  module Notation = Notation.Contravariant (Full)
   include Full
   include Base
 end
 
-(* Examples of bifunctor instances *)
+module Box = struct
+  module Base = struct
+    type 'a t = Box of 'a
 
-module Either = struct
-  module Base : Typeclass.BIFUNCTOR_BASE = struct
-    type ('a, 'b) t =
-      | Left of 'a
-      | Right of 'b
+    let map (func : 'a -> 'b) : 'a t -> 'b t = function
+      | Box a -> Box (func a)
+    ;;
 
-    let functor_map (funcl : 'a -> 'c) (funcr : 'b -> 'd) : ('a, 'b) t -> ('c, 'd) t
-      = function
-      | Left left -> Left (funcl left)
-      | Right right -> Right (funcr right)
+    let lift (value : 'a) : 'a t = Box value
+
+    let lift_binary (func : 'a -> 'b -> 'c) (box1 : 'a t) (box2 : 'b t) : 'c t =
+      match map func box1 with
+      | Box f -> map f box2
+    ;;
+
+    let select (box : ('a, 'b) Either.t t) (func : ('a -> 'b) t) : 'b t =
+      match box with
+      | Box (Left a) -> map (( |> ) a) func
+      | Box (Right b) -> Box b
+    ;;
+
+    let bind (box : 'a t) (func : 'a -> 'b t) : 'b t =
+      match map func box with
+      | Box value -> value
     ;;
   end
 
-  module Full = Factory.Bifunctor (Base)
+  module Full = Mixins.Monad (Base)
+  module Notation = Notation.Monad (Full)
   include Full
   include Base
 end
 
-(* Examples of applicative instances *)
-
-module HomoPair = struct
+module Homo_pair = struct
   module Base = struct
     type 'a t = 'a * 'a
 
-    let functor_map (func : 'a -> 'b) : 'a t -> 'b t = function
+    let map (func : 'a -> 'b) : 'a t -> 'b t = function
       | left, right -> func left, func right
     ;;
 
@@ -56,26 +67,22 @@ module HomoPair = struct
   end
 
   (* We generate the rest of the bindings using a factory *)
-  module Full = Factory.Applicative (Base)
+  module Full = Mixins.Applicative (Base)
 
   (* It's nice to have notation so let's add that too *)
-  module Notation = Notation_factory.Applicative (Full)
+  module Notation = Notation.Applicative (Full)
 
   (* We just need to populate the present module *)
   include Full
   include Base
 end
 
-(* Examples of monad instances *)
-
 module Option = struct
   (* Base definition *)
   module Base = struct
-    type 'a t =
-      | None
-      | Some of 'a
+    type 'a t = 'a option
 
-    let functor_map (func : 'a -> 'b) : 'a t -> 'b t = function
+    let map (func : 'a -> 'b) : 'a t -> 'b t = function
       | None -> None
       | Some value -> Some (func value)
     ;;
@@ -83,19 +90,27 @@ module Option = struct
     let lift (value : 'a) : 'a t = Some value
 
     let lift_binary (func : 'a -> 'b -> 'c) (opt1 : 'a t) (opt2 : 'b t) =
-      match functor_map func opt1 with
-      | Some rest -> functor_map rest opt2
+      match map func opt1 with
+      | Some rest -> map rest opt2
       | None -> None
     ;;
 
-    let join : 'a t t -> 'a t = function
+    let select (opt : ('a, 'b) Either.t t) (func : ('a -> 'b) t) : 'b t =
+      match opt with
       | None -> None
-      | Some value -> value
+      | Some (Left a) -> map (( |> ) a) func
+      | Some (Right b) -> Some b
+    ;;
+
+    let bind (opt : 'a t) (func : 'a -> 'b t) : 'b t =
+      match map func opt with
+      | None -> None
+      | Some opt -> opt
     ;;
   end
 
   (* We generate the rest of the bindings using a factory *)
-  module Full = Factory.Monad (Base)
+  module Full = Mixins.Monad (Base)
 
   (* We just need to populate the present module *)
   include Full
@@ -103,7 +118,7 @@ module Option = struct
 
   (* It's nice to have notation so let's add that too *)
   module Notation = struct
-    include Notation_factory.Monad (Full)
+    include Notation.Monad (Full)
 
     let ( or ) (option : 'a t) (default : 'a) : 'a =
       match option with
@@ -116,13 +131,11 @@ end
 module List = struct
   (* Base definition *)
   module Base = struct
-    type 'a t =
-      | Nil
-      | Cons of ('a * 'a t)
+    type 'a t = 'a Core.list
 
-    let rec functor_map (func : 'a -> 'b) : 'a t -> 'b t = function
+    let rec map (func : 'a -> 'b) : 'a t -> 'b t = function
       | Nil -> Nil
-      | Cons (value, next) -> Cons (func value, functor_map func next)
+      | Cons (value, next) -> Cons (func value, map func next)
     ;;
 
     let lift (value : 'a) : 'a t = Cons (value, Nil)
@@ -156,25 +169,37 @@ module List = struct
       aux list1 list2 Nil
     ;;
 
-    let rec join : 'a t t -> 'a t = function
+    let rec fold (func : 'acc -> 'a -> 'acc) (initial : 'acc) : 'a t -> 'acc = function
+      | Nil -> initial
+      | Cons (first, rest) -> fold func (func initial first) rest
+    ;;
+
+    let rec select (list : ('a, 'b) Either.t t) (func : ('a -> 'b) t) : 'b t =
+      match list with
       | Nil -> Nil
-      | Cons (Nil, outer) -> join outer
-      | Cons (Cons (value, inner), outer) -> Cons (value, concatenate inner (join outer))
+      | Cons (Left a, rest) -> concatenate (map (( |> ) a) func) (select rest func)
+      | Cons (Right b, rest) -> Cons (b, select rest func)
+    ;;
+
+    let bind (list : 'a t) (func : 'a -> 'b t) : 'b t =
+      match map func list with
+      | Nil -> Nil
+      | Cons (first, rest) -> fold concatenate first rest
     ;;
   end
 
   (* We generate the rest of the bindings using a factory *)
-  module Full = Factory.Monad (Base)
+  module Full = Mixins.Monad (Base)
 
   (* We just need to populate the present module *)
   include Full
   include Base
 
   (* It's nice to have notation so let's add that too *)
-  module Notation = Notation_factory.Monad (Full)
+  module Notation = Notation.Monad (Full)
 
-  let map_std_list (func : 'a -> 'b) (list : 'a list) : 'b t =
-    let rec aux (func : 'a -> 'b) (list : 'a list) (acc : 'b t) : 'b t =
+  let map_std_list (func : 'a -> 'b) (list : 'a Stdlib.List.t) : 'b t =
+    let rec aux (func : 'a -> 'b) (list : 'a Stdlib.List.t) (acc : 'b t) : 'b t =
       match list with
       | [] -> reverse acc
       | head :: tail -> aux func tail (Cons (func head, acc))
@@ -182,22 +207,44 @@ module List = struct
     aux func list Nil
   ;;
 
-  let of_std_list (list : 'a list) : 'a t = map_std_list (fun a -> a) list
+  let of_std_list (list : 'a Stdlib.List.t) : 'a t = map_std_list (fun a -> a) list
+end
 
-  module Specialize (Renderable : Typeclass.RENDERABLE) = struct
-    include Full
+module List_by_rec = struct
+  module Base = struct
+    include Iter.Fix_tag (Option)
 
-    type t = Renderable.t Base.t
+    type 'a t = 'a fix
 
-    let render (list : t) : string =
-      let rec aux (list : t) (acc : string) : string =
-        match list with
-        | Nil -> acc
-        | Cons (value, Nil) -> Renderable.render value
-        | Cons (value, next) ->
-          aux next (Printf.sprintf "%s ; %s" (Renderable.render value) acc)
-      in
-      "[" ^ aux list "" ^ "]"
+    let rec map (func : 'a -> 'b) : 'a t -> 'b t = function
+      | Empty -> Empty
+      | Tagged (first, rest) -> Tagged (func first, Option.map (map func) rest)
+    ;;
+
+    let lift (value : 'a) : 'a t = Tagged (value, None)
+  end
+
+  module Full = Mixins.Functor (Base)
+  include Full
+  include Base
+  module Notation = Notation.Functor (Full)
+end
+
+(* Examples of bifunctor instances *)
+
+module Either = struct
+  module Base : Typeclass.BIFUNCTOR = struct
+    type ('a, 'b) t =
+      | Left of 'a
+      | Right of 'b
+
+    let map (funcl : 'a -> 'c) (funcr : 'b -> 'd) : ('a, 'b) t -> ('c, 'd) t = function
+      | Left left -> Left (funcl left)
+      | Right right -> Right (funcr right)
     ;;
   end
+
+  module Full = Mixins.Bifunctor (Base)
+  include Full
+  include Base
 end
